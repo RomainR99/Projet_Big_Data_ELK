@@ -1,0 +1,45 @@
+version: '3.7'
+
+services:
+  # LE MOTEUR : ELASTICSEARCH
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.1
+    container_name: es-student
+    environment:
+      - node.name=es-node-1
+      - cluster.name=es-class-cluster
+      - discovery.type=single-node  # Force le mode "un seul serveur" pour éviter les erreurs de cluster
+      - bootstrap.memory_lock=true  # Performance
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g" # Alloue 1Go de RAM fixe (ni plus, ni moins)
+      - xpack.security.enabled=false # DÉSACTIVE LE LOGIN/MDP (Gain de temps énorme)
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata:/usr/share/elasticsearch/data # Persistance des données (pour ne pas perdre l'index si on redémarre)
+    ports:
+      - 9200:9200 # Port HTTP pour l'API
+    networks:
+      - elk-net
+
+  # L'INTERFACE : KIBANA
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.1
+    container_name: kibana-student
+    ports:
+      - 5601:5601 # Port Web pour accéder à l'interface
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200 # L'adresse du moteur
+    networks:
+      - elk-net
+    depends_on:
+      - elasticsearch # Attend que le moteur démarre
+
+volumes:
+  esdata:
+    driver: local
+
+networks:
+  elk-net:
+    driver: bridge

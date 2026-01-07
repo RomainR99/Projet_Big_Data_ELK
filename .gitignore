@@ -1,0 +1,15 @@
+# fichiers de données
+*.csv
+*.csv.gz
+*.parquet
+*.jsonl
+
+# dossiers de données
+data/
+
+# caches
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
