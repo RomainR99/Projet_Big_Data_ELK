@@ -771,8 +771,22 @@ Le champ `comments` est bon.
 
 ## Visualisation Tag Cloud dans Kibana
 
-- `création_de_la_vue.png`
-- `le_champ_comments_n_est_pas_la.png`
-- `le_champ_est_bien_dans_comments.png`
-- `Lens.png`
-- `tag_cloud.png`
+### Création de la vue
+
+![Création de la vue](./images/création_de_la_vue.png)
+
+### Le champ comments n'est pas là
+
+![Le champ comments n'est pas là](./images/le_champ_comments_n_est_pas_la.png)
+
+### Le champ est bien dans comments
+
+![Le champ est bien dans comments](./images/le_champ_est_bien_dans_comments.png)
+
+### Lens
+
+![Lens](./images/lens.png)
+
+### Tag Cloud
+
+![Tag Cloud](./images/tag_cloud.png)
