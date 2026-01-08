@@ -1,3 +1,15 @@
+# Projet Big Data - Analyse de données Airbnb avec Elasticsearch et NLP
+
+## 🎯 Objectif du projet
+
+1. **Analyser les données Airbnb** de deux villes (Bangkok et Barcelona) pour identifier les risques d'investissement que les notes officielles pourraient masquer.
+2. **Transformer 48 000 annonces et 1,6 million de commentaires** en données exploitables via un pipeline ETL et un enrichissement NLP avec TextBlob.
+3. **Extraire le sentiment des avis** (Positif, Neutre, Négatif) à partir des commentaires texte pour quantifier la qualité réelle des appartements.
+4. **Créer des visualisations interactives dans Kibana** (Tag Cloud, Camembert de Sentiment, Dashboard de Qualité Réelle) pour faciliter l'analyse.
+5. **Détecter rapidement les appartements risqués** grâce à l'analyse sémantique des commentaires, même lorsque leur note officielle semble correcte.
+
+---
+
 ## 1) Créer l'index airbnb-listings avec ton mapping (Kibana → Dev Tools)
 
 ⚠️ Si l'index existe déjà, supprime-le d'abord : `DELETE airbnb-listings`
