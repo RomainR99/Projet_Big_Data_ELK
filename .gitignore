@@ -3,7 +3,7 @@
 *.csv.gz
 *.parquet
 *.jsonl
-
+*.yml
 # dossiers de données
 data/
 

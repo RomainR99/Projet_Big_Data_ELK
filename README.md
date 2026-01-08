@@ -790,3 +790,239 @@ Le champ `comments` est bon.
 ### Tag Cloud
 
 ![Tag Cloud](./images/tag_cloud.png)
+
+### Activation de fielddata sur le champ comments
+
+Si le champ `comments` n'est pas agrégable dans Lens, il faut activer `fielddata` sur ce champ via Dev Tools :
+
+```json
+PUT airbnb-reviews/_mapping
+{
+  "properties": {
+    "comments": {
+      "type": "text",
+      "fielddata": true
+    }
+  }
+}
+```
+
+#### Effet technique
+
+Tu autorises Elasticsearch à charger le texte analysé en mémoire.
+
+Cela rend le champ `comments` :
+
+- ❌ **non agrégable** avant
+- ✅ **agrégable** maintenant
+
+![Comments agrégable n'est pas coché](./images/comments%20aggregeable%20n'est%20pas%20coché.png)
+
+![Type string et ajout du script pour avoir les comments](./images/type%20string%20et%20ajout%20du%20script%20pour%20avoir%20les%20comments.png)
+
+![Add scripted field](./images/Add%20scripted%20field.png)
+
+### Alternative : Créer un nouvel index avec fielddata activé
+
+Si tu préfères créer un nouvel index avec la configuration optimale dès le départ, utilise ces commandes dans Dev Tools :
+
+```json
+PUT airbnb-reviews-viz
+{
+  "mappings": {
+    "properties": {
+      "listing_id": { "type": "keyword" },
+      "date": { "type": "date" },
+      "reviewer_name": { "type": "text" },
+      "comments": {
+        "type": "text",
+        "fielddata": true
+      },
+      "sentiment_label": { "type": "keyword" },
+      "sentiment_polarity": { "type": "float" },
+      "target_city": { "type": "keyword" }
+    }
+  }
+}
+```
+
+```json
+POST _reindex
+{
+  "source": {
+    "index": "airbnb-reviews"
+  },
+  "dest": {
+    "index": "airbnb-reviews-viz"
+  }
+}
+```
+
+## Etape 4 : Analyse de la "Vérité" vs "Note Officielle"
+
+**Rôle :** Business Analyst
+
+Vous allez comparer la note officielle Airbnb (étoiles) avec le sentiment réel calculé par votre algorithme.
+
+**Objectif :** Créer un Dashboard de "Qualité Réelle".
+
+**Visualisations à produire :**
+
+1. **Camembert de Sentiment :** Répartition globale (Positif vs Négatif).
+2. **Top Flops :** Une liste des appartements ayant le plus grand nombre de commentaires "Négatifs".
+3. **Moteur de Recherche de Risques :** Une barre de recherche permettant de trouver instantanément les commentaires contenant les mots : "bed bugs" (punaises de lit), "scam" (arnaque), "police".
+
+**Livrable Final :** Une démonstration montrant comment identifier un appartement risqué en quelques secondes grâce à l'analyse sémantique, même si sa note officielle semble correcte.
+
+### Visualisations du Dashboard
+
+![Bibliothèque de visualisations](./images/Analytics:VisualizeLibrary.png)
+
+![Camembert Lens](./images/Lens:Pie)
+
+![Métrique Count](./images/Metric:Count.png)
+
+### Vérification rapide (preuve que ça marche)
+
+On exécute cette requête, et elle fonctionne :
+
+```json
+GET airbnb-reviews/_search
+{
+  "size": 0,
+  "aggs": {
+    "by_label": {
+      "terms": {
+        "field": "sentiment_label"
+      }
+    }
+  }
+}
+```
+
+**Résultat :**
+
+```json
+{
+  "took": 35,
+  "timed_out": false,
+  "_shards": {
+    "total": 1,
+    "successful": 1,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": {
+      "value": 10000,
+      "relation": "gte"
+    },
+    "max_score": null,
+    "hits": []
+  },
+  "aggregations": {
+    "by_label": {
+      "doc_count_error_upper_bound": 0,
+      "sum_other_doc_count": 0,
+      "buckets": [
+        {
+          "key": "Positif",
+          "doc_count": 1100015
+        },
+        {
+          "key": "Neutre",
+          "doc_count": 476983
+        },
+        {
+          "key": "Negatif",
+          "doc_count": 25425
+        }
+      ]
+    }
+  }
+}
+```
+
+**Résumé :**
+
+- **Positif** → 1 100 015
+- **Neutre** → 476 983
+- **Négatif** → 25 425
+
+✅ **Les données sont bien là !**
+
+C'est uniquement Lens qui demandait le mauvais type.
+
+**Pour rappel :** Aucune donnée affichée dans Lens avant la correction.
+
+### Vérification dans la Data View
+
+Dans la Data View `airbnb-reviews`, toutes les données nécessaires pour l'étape 4 sont présentes :
+
+![Data Views - Toutes les données nécessaires](./images/DataViews.png)
+
+Comme le montre l'image, la Data View contient tous les champs requis pour créer les visualisations du Dashboard :
+- `sentiment_label` (keyword) pour le camembert de sentiment
+- `sentiment_score` (float) pour les métriques
+- `comments` (text) pour la recherche de risques
+- `listing_id` (keyword) pour les agrégations par appartement
+
+## Solution si Lens persiste à dire "no data" (fréquent)
+
+Si Lens continue d'afficher "no data" malgré la présence des données dans Elasticsearch, suivez cette procédure :
+
+### Étape 1 — Refresh Data View (OBLIGATOIRE)
+
+1. **Kibana → Stack Management**
+2. **Data Views**
+3. Clique sur `airbnb-reviews`
+4. Bouton **Refresh field list**
+5. Confirme
+
+👉 **Ça force Kibana à relire le mapping Elasticsearch**
+
+![Stack Management - Refresh Data View](./images/stackManagement.png)
+
+### Création du Camembert de Sentiment
+
+Pour créer le camembert de sentiment (répartition Positif/Neutre/Négatif), suivez ces étapes dans Lens :
+
+1. **Metric : Count**
+   - Dans la section métrique, sélectionnez ou ajoutez **Count** pour compter le nombre de documents
+
+2. **Slice by : sentiment_label**
+   - Utilisez le bouton **+ Add or drag-and-drop a field** 
+   - Ajoutez le champ `sentiment_label` dans la section **Slice by** (ou **Break down by**)
+   - Cela va créer les segments du camembert selon les valeurs du sentiment (Positif, Neutre, Negatif)
+
+![Slice by sentiment_label](./images/slice%20by%20sentiment_label.png)
+
+### Configuration du Time Filter
+
+Pour que la visualisation affiche correctement toutes les données, il est important de configurer le **Time Filter** :
+
+1. Cliquez sur le sélecteur de temps en haut à droite de Kibana
+2. Changez le filtre temporel pour sélectionner **Last 5 years**
+3. Cela permet d'inclure toutes les dates des reviews dans l'analyse
+
+![Configurer le Time Filter - Last 5 years](./images/Mettre%20last5%20years.png)
+
+Cette configuration permet de visualiser la répartition des avis selon leur sentiment, créant ainsi le **Camembert de Sentiment** nécessaire pour l'étape 4.
+
+### 🎯 Résultat attendu
+
+Un camembert avec 3 parts :
+
+- 🟢 **Positif**
+- 🟡 **Neutre**
+- 🔴 **Négatif**
+
+👉 **Exactement cohérent avec ton agrégation :**
+
+- **Positif** ≈ 1 100 015
+- **Neutre** ≈ 476 983
+- **Negatif** ≈ 25 425
+
+### 📝 Remarque technique
+
+Le `sentiment_label` est un champ métier dérivé par NLP. Lens l'utilise comme dimension de segmentation, tandis que la métrique reste un simple comptage de documents. 
