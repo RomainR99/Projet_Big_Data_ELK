@@ -858,6 +858,27 @@ POST _reindex
 }
 ```
 
+**Dev Tools :**
+```json
+PUT airbnb-reviews-viz
+{
+  "mappings": {
+    "properties": {
+      "listing_id": { "type": "keyword" },
+      "date": { "type": "date" },
+      "reviewer_name": { "type": "text" },
+      "comments": {
+        "type": "text",
+        "fielddata": true
+      },
+      "sentiment_label": { "type": "keyword" },
+      "sentiment_polarity": { "type": "float" },
+      "target_city": { "type": "keyword" }
+    }
+  }
+}
+```
+
 ## Etape 4 : Analyse de la "Vérité" vs "Note Officielle"
 
 **Rôle :** Business Analyst
