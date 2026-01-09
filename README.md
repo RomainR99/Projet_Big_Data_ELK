@@ -1058,4 +1058,162 @@ Un camembert avec 3 parts :
 
 ### 📝 Remarque technique
 
-Le `sentiment_label` est un champ métier dérivé par NLP. Lens l'utilise comme dimension de segmentation, tandis que la métrique reste un simple comptage de documents. 
+Le `sentiment_label` est un champ métier dérivé par NLP. Lens l'utilise comme dimension de segmentation, tandis que la métrique reste un simple comptage de documents.
+
+## Cartographie Immobilière (Maps)
+
+**Rôle :** Géomaticien
+
+La localisation est le critère numéro 1 en immobilier. Vous devez prouver aux investisseurs que vous maîtrisez le terrain et les zones de tension.
+
+### Objectifs :
+
+1. Ouvrir l'application **"Maps"** dans Kibana.
+2. Cliquer sur **"Add layer"** et choisir la source **"Documents"**.
+3. Sélectionner votre Data View **"Airbnb Data"** (ou `airbnb-listings`).
+4. **Configuration du calque :**
+   - Vérifier que le champ géospatial est bien `location`.
+   - Ajouter une coloration dynamique par prix : Dans **"Layer Style"**, changer **"Fill color"** de **"Fixed"** à **"By value"**. Sélectionner le champ `price`.
+   - Choisir une palette de couleur logique (ex: Vert pour pas cher, Rouge pour cher).
+
+![Fill color by value price](./images/fil%20color%20by%20value%20price.png)
+
+![Palette couleur](./images/palette%20couleur.png)
+
+5. **Ajouter une info-bulle (Tooltip)** : Configurer l'affichage pour qu'au survol de la souris, le nom de l'appartement et son prix s'affichent.
+
+![Tooltip price](./images/toolip%20price.png)
+
+### Livrable :
+
+Une carte interactive sauvegardée sous le nom **"Carte des Prix Airbnb"** qui permet de visualiser géographiquement la répartition des prix des logements Airbnb, avec une coloration dynamique facilitant l'identification des zones chères et abordables.
+
+## Statistiques Financières (Lens)
+
+**Rôle :** Financial Analyst
+
+Les investisseurs veulent comparer la rentabilité entre les villes et comprendre la structure du marché. Vous allez utiliser l'outil **"Lens"**.
+
+### Objectifs :
+
+Créer trois visualisations distinctes :
+
+#### 1. Comparateur de Villes (Bar Chart)
+
+- **Axe Horizontal** : La ville (champ `target_city`)
+- **Axe Vertical** : Le prix moyen
+- **⚠️ Attention** : Par défaut Kibana compte les lignes ("Count"). Vous devez changer la métrique pour faire une **"Average"** sur le champ `price`
+
+**Question métier :** Quelle ville est la plus chère en moyenne ?
+
+![Average price vertical axis](./images/average%3Aprice%3Avertical%20axis.png)
+
+![Avec price euro c'est Barcelone qui est plus chère](./images/avec%20price%20euro%20c'est%20barcelone%20qui%20est%20plus%20chere.png)
+
+**Configuration :**
+- Dans Lens, glisser `target_city` sur l'axe horizontal
+- Changer la métrique de "Count" à "Average"
+- Sélectionner le champ `price` pour la moyenne
+- Optionnel : Utiliser une échelle logarithmique pour mieux visualiser les écarts de prix
+
+![Choix logarithmique pour l'axe des prix](./images/choix%20logarythmique%20pour%20l'axe%20des%20prix.png)
+
+#### 2. Distribution des Prix (Histogramme)
+
+- Glisser le champ `price` sur l'axe horizontal. Kibana va automatiquement créer des intervalles de prix
+
+**Objectif :** Identifier la gamme de prix "standard" et repérer les valeurs extrêmes (luxe ou erreurs)
+
+![Bar Vertical est histogramme](./images/Bar%20Vertical%20est%20histogramme.png)
+
+![Les prix sont cohérents](./images/les%20prix%20sont%20cohérents.png)
+
+**Configuration :**
+- Dans Lens, glisser `price` sur l'axe horizontal (X-axis)
+- La métrique reste "Count" pour compter le nombre d'annonces par intervalle de prix
+- Kibana crée automatiquement des buckets/segments de prix
+
+#### 3. Répartition par Type (Donut / Pie Chart)
+
+- **Métrique** : Nombre d'annonces ("Count of records")
+- **Segmentation (Slice by)** : Type de logement (champ `room_type`)
+
+**Question métier :** Le marché est-il dominé par les logements entiers ou les chambres privées ?
+
+![HeatMap](./images/HeatMap.png)
+
+**Configuration :**
+- Changer le type de visualisation en "Donut" ou "Pie Chart"
+- Métrique : Count
+- Slice by : `room_type`
+- Cela permet de visualiser la proportion de chaque type de logement (Entire home/apt, Private room, Shared room)
+
+### Gestion des Data Views
+
+⚠️ **Note importante** : Si vous avez besoin de recréer la Data View pour avoir un champ `price-euro` ou corriger des problèmes de mapping :
+
+![Delete et recréé le data view pour avoir price-euro](./images/delete%20et%20recréé%20le%20data%20view%20pour%20avoir%20price-euro.png)
+
+### Conversion des prix en euros (Dev Tools)
+
+Pour comparer les prix entre Bangkok (THB - Baht thaïlandais) et Barcelona (EUR), il faut normaliser les prix en euros. Utilisez la commande suivante dans Dev Tools pour créer un nouvel index avec un champ `price_eur` :
+
+```json
+POST _reindex
+{
+  "source": {
+    "index": "airbnb-listings"
+  },
+  "dest": {
+    "index": "airbnb-listings-view"
+  },
+  "script": {
+    "lang": "painless",
+    "source": """
+      if (ctx._source.containsKey('price') && ctx._source.price != null) {
+        if (ctx._source.containsKey('target_city') && ctx._source.target_city == 'bangkok') {
+          ctx._source.price_eur = ctx._source.price / 36.6;
+        } else {
+          ctx._source.price_eur = ctx._source.price;
+        }
+      }
+    """
+  }
+}
+```
+
+**Explication du script :**
+- Pour Bangkok : conversion du prix de THB vers EUR en divisant par 36.6 (taux de change approximatif)
+- Pour Barcelona : le prix est déjà en EUR, donc on le conserve tel quel
+- Le nouveau champ `price_eur` est ajouté à chaque document
+
+**Vérification :**
+```json
+GET airbnb-listings-view/_count
+```
+
+**Résultat :** Le nouvel index `airbnb-listings-view` contient tous les documents de `airbnb-listings` avec le champ `price_eur` normalisé en euros.
+
+![Dashboard avant-après correction avec price-euro](./images/dashboard%20avant-apres%20correction%20avec%20price-euro.png)
+
+### Création du Dashboard
+
+Une fois les trois visualisations créées, vous pouvez les regrouper dans un Dashboard :
+
+![Dashboard](./images/dashboard.png)
+
+![Dashboard corrigé](./images/dashboard%20corrigé.png)
+
+![Dashboard finale](./images/dashboard%20finale.png)
+
+![DigDash](./images/digdash.png)
+
+### Livrable :
+
+Trois graphiques sauvegardés dans la librairie de visualisation avec des titres clairs :
+
+1. **"Comparaison des Prix Moyens par Ville"** - Bar Chart montrant quelle ville (Bangkok vs Barcelona) est la plus chère
+2. **"Distribution des Prix"** - Histogramme révélant la gamme de prix standard et les valeurs extrêmes
+3. **"Répartition par Type de Logement"** - Donut/Pie Chart montrant la dominance des logements entiers vs chambres privées
+
+Ces visualisations peuvent ensuite être intégrées dans un Dashboard complet pour une vue d'ensemble financière du marché Airbnb. 

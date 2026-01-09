@@ -1,8 +1,14 @@
 # Présentation Orale - Projet Big Data
 ## Analyse de données Airbnb avec Elasticsearch et NLP
 
-**Durée totale : 8 minutes**  
-**Structure : 4 parties de 2 minutes chacune**
+**Durée totale : 9 minutes**  
+**Structure : 4 parties principales + conclusion**
+
+- Partie 1 : Contexte et Objectif (2 min)
+- Partie 2 : Pipeline ETL et Ingestion (2 min)
+- Partie 3 : Enrichissement NLP (2 min)
+- Partie 4 : Visualisations et Résultats (2 min)
+- Conclusion : Récapitulatif et Perspectives (1 min)
 
 ---
 
@@ -54,10 +60,12 @@
 
 ### Mapping Elasticsearch
 - Champs clés configurés :
-  - `location` : `geo_point` (pour les cartes)
-  - `price` : `float`
-  - `target_city` : `keyword` (pour les filtres)
-  - `review_scores_rating` : `float`
+  - `location` : `geo_point` ⭐ **Essentiel pour la cartographie** (visualisation Maps)
+  - `price` : `float` (pour analyses financières)
+  - `target_city` : `keyword` (pour filtres et comparaisons)
+  - `review_scores_rating` : `float` (notes officielles)
+  
+**Note** : Le type `geo_point` permet de créer des cartes interactives dans Kibana Maps, ce qui est crucial pour l'analyse géographique.
 
 ### Points clés techniques
 - Traitement par paquets (chunks) pour gérer le volume
@@ -116,87 +124,149 @@
 
 ## 📊 Partie 4 : Visualisations et Résultats (2 minutes)
 
-### Visualisations créées dans Kibana
+### A. Visualisations NLP - Analyse de Sentiment
 
 #### 1. Tag Cloud (Nuage de Mots)
 - **Objectif** : Identifier les mots-clés récurrents dans les avis négatifs
-- **Configuration** :
-  - Champ : `comments`
-  - Filtre : `sentiment_label = Negatif`
-  - Exclusion des stopwords
 - **Résultat** : Mots les plus fréquents (noise, dirty, small, stairs, cold)
+- **Valeur** : Détection rapide des problèmes récurrents
 
 #### 2. Camembert de Sentiment
-- **Métrique** : Count
-- **Dimension** : `sentiment_label`
-- **Configuration** :
-  - Time Filter : Last 5 years
-  - Slice by : `sentiment_label`
-- **Résultat** : Visualisation de la répartition globale
+- **Répartition globale** : Positif (68,7%), Neutre (29,8%), Négatif (1,6%)
+- **Configuration** : Time Filter Last 5 years, Slice by `sentiment_label`
+- **Impact** : Vue d'ensemble immédiate de la satisfaction
 
 #### 3. Dashboard "Qualité Réelle"
-- **Camembert** : Répartition Positif/Neutre/Négatif
+- **Camembert** : Répartition sentimentale
 - **Top Flops** : Appartements avec le plus de commentaires négatifs
 - **Moteur de recherche** : Recherche de risques (bed bugs, scam, police)
 
+### B. Cartographie Immobilière (Maps)
+
+**Objectif** : Visualiser géographiquement la répartition des prix
+
+- **Carte interactive** avec coloration dynamique par prix
+- **Palette de couleurs** : Vert (pas cher) → Rouge (cher)
+- **Info-bulles** : Nom et prix au survol
+- **Livrable** : "Carte des Prix Airbnb" permettant d'identifier les zones de tension
+
+**Valeur métier** : La localisation est le critère #1 en immobilier. Cette carte permet aux investisseurs de maîtriser le terrain et les zones stratégiques.
+
+### C. Statistiques Financières (Lens)
+
+#### 1. Comparateur de Villes (Bar Chart)
+- **Question** : Quelle ville est la plus chère en moyenne ?
+- **Résultat** : Barcelona est plus chère que Bangkok (après conversion EUR)
+- **Point technique** : Conversion THB → EUR (taux 36.6) pour comparer équitablement
+
+#### 2. Distribution des Prix (Histogramme)
+- **Objectif** : Identifier la gamme de prix standard
+- **Détection** : Valeurs extrêmes (luxe ou erreurs de données)
+- **Utilité** : Comprendre la structure du marché
+
+#### 3. Répartition par Type (Donut Chart)
+- **Question** : Le marché est-il dominé par les logements entiers ou chambres privées ?
+- **Segmentation** : Entire home/apt vs Private room vs Shared room
+- **Analyse** : Comprendre l'offre disponible par ville
+
+### D. Conversion des Prix en Euros
+
+**Défi technique** : Comparer Bangkok (THB) et Barcelona (EUR)
+
+- **Solution** : Réindexation avec script Painless
+- **Conversion** : Bangkok → EUR (divisé par 36.6)
+- **Résultat** : Nouvel index `airbnb-listings-view` avec champ `price_eur` normalisé
+- **Impact** : Comparaisons équitables entre villes
+
 ### Problèmes rencontrés et solutions
 
-#### Problème 1 : "No data" dans Lens
-- **Cause** : Data View non rafraîchie
-- **Solution** : Stack Management → Data Views → Refresh field list
+- **"No data" dans Lens** → Refresh Data View
+- **Champ `comments` non agrégable** → Activer `fielddata: true`
+- **Prix non comparables** → Conversion en euros avec réindexation
 
-#### Problème 2 : Champ `comments` non agrégable
-- **Cause** : Champ `text` sans `fielddata` activé
-- **Solution** : Activer `fielddata: true` dans le mapping
-
-### Impact métier
-- ✅ **Détection rapide** des appartements risqués
-- ✅ **Analyse sémantique** au-delà des notes numériques
-- ✅ **Identification de signaux faibles** (bruit, sécurité, propreté)
-- ✅ **Décision d'investissement** plus éclairée
-
-### Démonstration
-- Un appartement peut avoir une note officielle de 4,5/5
-- Mais contenir des commentaires négatifs récurrents sur le bruit
-- Le NLP permet de détecter ce risque en quelques secondes
+### Impact métier global
+- ✅ **Analyse géographique** : Identification des zones stratégiques
+- ✅ **Analyse financière** : Comparaison équitable entre villes
+- ✅ **Analyse sémantique** : Détection de risques non visibles
+- ✅ **Dashboard complet** : Vue d'ensemble multi-dimensionnelle
 
 ---
 
-## 🎯 Conclusion (30 secondes)
+## 🎯 Conclusion (1 minute)
 
-### Récapitulatif
-1. ✅ **ETL robuste** : 48K annonces nettoyées et indexées
-2. ✅ **NLP efficace** : 1,6M commentaires enrichis avec sentiment
-3. ✅ **Visualisations** : Dashboard interactif dans Kibana
-4. ✅ **Valeur métier** : Identification de risques non visibles dans les notes
+### Récapitulatif complet du projet
+1. ✅ **ETL robuste** : 48K annonces nettoyées et indexées (Bangkok + Barcelona)
+2. ✅ **NLP efficace** : 1,6M commentaires enrichis avec sentiment (Positif/Neutre/Négatif)
+3. ✅ **Visualisations multi-dimensionnelles** :
+   - **NLP** : Tag Cloud, Camembert de Sentiment, Dashboard Qualité Réelle
+   - **Géographie** : Carte interactive des prix avec coloration dynamique
+   - **Finance** : Comparaison villes, Distribution prix, Répartition par type
+4. ✅ **Normalisation des données** : Conversion THB → EUR pour comparaisons équitables
+5. ✅ **Valeur métier** : Identification de risques et opportunités d'investissement
 
-### Points forts
-- Pipeline scalable et reproductible
-- Traitement de gros volumes (1,6M documents)
-- Analyse NLP pour enrichir les données structurées
-- Visualisations exploitables pour la prise de décision
+### Points forts techniques
+- **Pipeline scalable** : ETL → NLP → Visualisation
+- **Traitement de gros volumes** : 48K annonces + 1,6M reviews
+- **Enrichissement intelligent** : NLP pour transformer texte en données quantifiables
+- **Visualisations exploitables** : Maps, Lens, Dashboards interactifs
+- **Normalisation des devises** : Script Painless pour conversion automatique
 
-### Perspectives
-- Parallélisation du traitement NLP
-- Modèles plus avancés (VADER, spaCy)
-- Intégration de données supplémentaires (météo, événements)
-- Alertes automatiques sur les risques détectés
+### Valeur ajoutée pour l'investisseur
+- **Analyse géographique** : Identification des zones stratégiques et zones de tension
+- **Analyse financière** : Comparaison équitable entre villes après conversion
+- **Analyse sémantique** : Détection de risques non visibles dans les notes officielles
+- **Vue d'ensemble** : Dashboard complet pour prise de décision éclairée
+
+### Perspectives d'évolution
+- **Performance** : Parallélisation du traitement NLP (multiprocessing)
+- **Précision** : Modèles plus avancés (VADER, spaCy, transformers)
+- **Enrichissement** : Intégration données supplémentaires (météo, événements, transports)
+- **Automatisation** : Alertes automatiques sur risques détectés
+- **Temps réel** : Streaming de nouvelles reviews pour analyse continue
 
 ---
 
 ## 📝 Notes pour la présentation
 
 ### Timing recommandé
-- **Partie 1** : 2 min (Contexte)
-- **Partie 2** : 2 min (ETL)
-- **Partie 3** : 2 min (NLP)
-- **Partie 4** : 2 min (Visualisations)
-- **Conclusion** : 30 sec
+- **Partie 1** : 2 min (Contexte et Objectif)
+- **Partie 2** : 2 min (Pipeline ETL et Ingestion)
+- **Partie 3** : 2 min (Enrichissement NLP)
+- **Partie 4** : 2 min (Visualisations multi-dimensionnelles)
+  - A. Visualisations NLP (30 sec)
+  - B. Cartographie Immobilière (30 sec)
+  - C. Statistiques Financières (45 sec)
+  - D. Conversion prix + Problèmes/Solutions (15 sec)
+- **Conclusion** : 1 min (Récapitulatif et Perspectives)
 
 
 ### Points à mettre en avant
+
+#### Chiffres clés
 - **Volumétrie** : 48K annonces + 1,6M reviews
 - **Fiabilité** : 0 échec d'indexation
 - **Performance** : Traitement en quelques minutes
-- **Valeur métier** : Détection de risques non visibles
+- **Enrichissement** : 3 dimensions (NLP, Géographie, Finance)
+
+#### Valeur métier
+- **Analyse géographique** : Carte interactive des zones stratégiques
+- **Analyse financière** : Comparaison équitable entre villes (normalisation EUR)
+- **Analyse sémantique** : Détection de risques non visibles dans les notes
+- **Dashboard complet** : Vue d'ensemble multi-dimensionnelle pour investisseurs
+
+#### Innovation technique
+- **Pipeline ETL** : Traitement par chunks, validation robuste
+- **NLP TextBlob** : Analyse de sentiment à grande échelle
+- **Réindexation intelligente** : Script Painless pour conversion de devises
+- **Visualisations avancées** : Maps, Lens, Dashboards interactifs
+
+### Structure de démonstration suggérée
+
+1. **Introduction** : Montrer la problématique (note 4,5/5 mais commentaires négatifs)
+2. **Pipeline ETL** : Afficher les statistiques d'ingestion
+3. **NLP** : Montrer transformation avant/après (texte → sentiment)
+4. **Cartographie** : Démontrer la carte interactive avec zones de prix
+5. **Statistiques** : Présenter les 3 graphiques financiers (comparaison, distribution, répartition)
+6. **Dashboard** : Vue d'ensemble complète
+7. **Conclusion** : Synthèse valeur ajoutée pour l'investisseur
 
