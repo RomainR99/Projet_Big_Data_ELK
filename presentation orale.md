@@ -4,15 +4,15 @@
 **Durée totale : 9 minutes**  
 **Structure : 4 parties principales + conclusion**
 
-- Partie 1 : Contexte et Objectif (2 min)
-- Partie 2 : Pipeline ETL et Ingestion (2 min)
-- Partie 3 : Enrichissement NLP (2 min)
-- Partie 4 : Visualisations et Résultats (2 min)
-- Conclusion : Récapitulatif et Perspectives (1 min)
+- Partie 1 : Contexte et Objectif 
+- Partie 2 : Pipeline ETL et Ingestion 
+- Partie 3 : Enrichissement NLP 
+- Partie 4 : Visualisations et Résultats 
+- Conclusion : Récapitulatif et Perspectives 
 
 ---
 
-## 🎯 Partie 1 : Contexte et Objectif (2 minutes)
+## 🎯 Partie 1 : Contexte et Objectif 
 
 ### Introduction
 - **Problématique métier** : Analyser les données Airbnb pour identifier les risques d'investissement
@@ -38,7 +38,7 @@
 
 ---
 
-## 🔄 Partie 2 : Pipeline ETL et Ingestion (2 minutes)
+## 🔄 Partie 2 : Pipeline ETL et Ingestion
 
 ### Étape 1 : Nettoyage et Fusion
 - **Script** : `1_clean_data.py`
@@ -74,7 +74,7 @@
 
 ---
 
-## 🧠 Partie 3 : Enrichissement NLP (2 minutes)
+## 🧠 Partie 3 : Enrichissement NLP 
 
 ### Problématique
 - **1,6 million de commentaires** à analyser
@@ -122,7 +122,7 @@
 
 ---
 
-## 📊 Partie 4 : Visualisations et Résultats (2 minutes)
+## 📊 Partie 4 : Visualisations et Résultats 
 
 ### A. Visualisations NLP - Analyse de Sentiment
 
@@ -192,7 +192,7 @@
 
 ---
 
-## 🎯 Conclusion (1 minute)
+## 🎯 Conclusion 
 
 ### Récapitulatif complet du projet
 1. ✅ **ETL robuste** : 48K annonces nettoyées et indexées (Bangkok + Barcelona)
